@@ -1,0 +1,23 @@
+services: 
+
+  orchestrator:
+    build: ./containers/orchestrator
+
+  ingestion:
+    build: ./containers/ingestion
+    depends_on:
+      - vector-db
+    environment:
+      - QDRANT_URL=http://vector-db:6333 # URL for the vector database
+      - HF_HOME=/app/.cache/huggingface # Set Hugging Face cache directory
+    volumes:
+      - ../../data/ingestion:/app/data # Connect host ingestion data directory
+      - ../../data/ingestion/huggingface-cache:/app/.cache/huggingface # Cache for Hugging Face models
+
+  vector-db:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ../../data/vector-db:/qdrant/storage # Persist vector DB data
