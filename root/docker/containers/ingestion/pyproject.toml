@@ -1,0 +1,15 @@
+[project]
+name = "ingestion"
+version = "0.1.0"
+description = "Ingestion service for processing and uploading documents to Qdrant vector database."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "colpali-engine>=0.3.13",
+    "datasets>=4.4.2",
+    "pdf2image>=1.17.0",
+    "pillow>=12.0.0",
+    "qdrant-client>=1.16.2",
+    "torch>=2.8.0",
+    "tqdm>=4.67.1",
+]
