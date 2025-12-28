@@ -1,5 +1,5 @@
 def main():
-    print("Hello from knowledge!")
+    print("Knowledge agent started!")
 
 
 if __name__ == "__main__":
