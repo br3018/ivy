@@ -2,36 +2,27 @@
 
 ## Overview
 
-The ingestion service processes PDF documents and uploads them to the Qdrant vector database using ColQwen2 multivector embeddings. This service is a critical component of the Ivy AI orchestration system's knowledge layer.
+The ingestion service processes PDF documents and uploads them to the Qdrant vector database using ColQwen2.5 Omni multivector embeddings. This service is a critical component of the Ivy AI orchestration system's knowledge layer.
 
 ## Architecture
 
 ### Embedding Strategy
 
-The service implements a **three-vector approach** for optimal retrieval performance:
+The service uses **ColQwen2.5 Omni** for multivector embeddings:
 
-1. **Original Embeddings** (~700 vectors/page, 128-dim)
+1. **Multivector Embeddings** 
    - Full multivector representation preserving spatial structure
-   - HNSW indexing disabled for faster ingestion
-   - Used only in the reranking stage of retrieval
-
-2. **Row-Pooled Embeddings** (128-dim)
-   - Mean pooled across rows (horizontal aggregation)
-   - HNSW indexing enabled for fast similarity search
-   - Used in the prefetch stage of retrieval
-
-3. **Column-Pooled Embeddings** (128-dim)
-   - Mean pooled across columns (vertical aggregation)
-   - HNSW indexing enabled for fast similarity search
-   - Used in the prefetch stage of retrieval
+   - Variable number of vectors per page depending on content
+   - HNSW indexing disabled (m=0) for faster ingestion
+   - Uses MAX_SIM comparator for similarity search
 
 ### Data Flow
 
 ```
 1. Monitor: /app/data/unprocessed/ (input PDFs)
 2. Convert: PDF → Images (150 DPI)
-3. Embed: Images → ColQwen2 embeddings (3 variants)
-4. Upload: Embeddings → Qdrant collection "RAG_ColQwen2"
+3. Embed: Images → ColQwen2.5 Omni multivector embeddings
+4. Upload: Embeddings → Qdrant collection "embeddings_database"
 5. Archive: Processed PDFs → /app/data/processed/
 ```
 
@@ -86,34 +77,22 @@ The service provides detailed logging:
 
 ### Model Information
 
-- **Model**: ColQwen2 (vidore/colqwen2-v0.1)
+- **Model**: ColQwen2.5 Omni (vidore/colqwen-omni-v0.1)
 - **Precision**: bfloat16
-- **Embedding Dimension**: 128
-- **Patch-based encoding**: Dynamic grid calculation
+- **Embedding Dimension**: 128 per vector
+- **Multivector**: Variable vectors per page preserving spatial structure
 
 ### Qdrant Collection Schema
 
 ```python
 {
-  "collection_name": "RAG_ColQwen2",
+  "collection_name": "embeddings_database",
   "vectors": {
     "original": {
       "size": 128,
       "distance": "COSINE",
       "multivector": "MAX_SIM",
-      "hnsw": {"m": 0}  # Disabled
-    },
-    "mean_pooling_rows": {
-      "size": 128,
-      "distance": "COSINE",
-      "multivector": "MAX_SIM"
-      # HNSW enabled (default)
-    },
-    "mean_pooling_columns": {
-      "size": 128,
-      "distance": "COSINE",
-      "multivector": "MAX_SIM"
-      # HNSW enabled (default)
+      "hnsw": {"m": 0}  # Disabled for faster ingestion
     }
   }
 }
@@ -123,7 +102,8 @@ The service provides detailed logging:
 
 - **Tutorial**: [Qdrant PDF Retrieval at Scale](https://qdrant.tech/documentation/advanced-tutorials/pdf-retrieval-at-scale/)
 - **Colab Example**: [ColPali/ColQwen2 Tutorial](https://colab.research.google.com/github/qdrant/examples/blob/master/pdf-retrieval-at-scale/ColPali_ColQwen2_Tutorial.ipynb)
-- **ColQwen2 Model**: [vidore/colqwen2-v0.1](https://huggingface.co/vidore/colqwen2-v0.1)
+- **ColQwen2.5 Omni Model**: [vidore/colqwen-omni-v0.1](https://huggingface.co/vidore/colqwen-omni-v0.1)
+- **ColPali Engine**: [ColPali Engine Documentation](https://github.com/illuin-tech/colpali)
 
 ## Troubleshooting
 
