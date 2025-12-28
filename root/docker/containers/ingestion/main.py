@@ -184,7 +184,7 @@ def main() -> None:
     4. Process all PDFs in unprocessed directory
     5. Move completed PDFs to processed directory
     """
-    print("Ingestion service started")
+    print("Ingestion service started!")
     
     # Initialize Qdrant client using environment variable
     qdrant_url = os.getenv("QDRANT_URL")
@@ -271,7 +271,6 @@ def main() -> None:
     
     if len(pdf_files) == 0:
         print("No PDFs to process. Exiting.")
-        return
     
     # Initialize ColQwen2 model for embedding generation
     print("Loading ColQwen2 model and processor...")
@@ -356,6 +355,43 @@ def main() -> None:
             print(f"  Error moving {filename}: {e}")
     
     print("\nIngestion pipeline completed successfully")
+    
+    ## Test query
+    query = "What does DRD mean?"
+    processed_queries = colqwen_processor.process_queries([query]).to(colqwen_model.device)
+    query_embedding = colqwen_model(**processed_queries)[0].cpu().float().numpy().tolist()
+    
+    # Final amount of results to return
+    search_limit = 10
+    # Amount of results to prefetch for reranking
+    prefetch_limit = 100
+
+    response = client.query_points(
+        collection_name=QDRANT_COLLECTION_NAME,
+        query=query_embedding,
+        prefetch=[
+            models.Prefetch(
+                query=query_embedding,
+                limit=prefetch_limit,
+                using="mean_pooling_columns"
+            ),
+            models.Prefetch(
+                query=query_embedding,
+                limit=prefetch_limit,
+                using="mean_pooling_rows"
+            ),
+        ],
+        limit=search_limit,
+        with_payload=True,
+        using="original"
+    )
+    
+    # Print result:
+    print("Test Query Results:")
+    print(f"Query: {query}")
+    for point in response.points:
+        print(f"Score: {point.score}")
+        print(f"Payload: {point.payload}")
 
 if __name__ == "__main__":
     main()
