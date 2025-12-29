@@ -148,24 +148,24 @@ def main() -> None:
         except Exception as e:
             print(f"Error uploading to Qdrant: {e}")
     
+    # Initialize ColQwen2.5 Omni model for embedding generation
+    # Create offload folder if it doesn't exist
+    os.makedirs("/tmp", exist_ok=True)
+    print("Loading ColQwen2.5 Omni model and processor...")
+    colqwen_model = ColQwen2_5Omni.from_pretrained(
+        "vidore/colqwen-omni-v0.1",
+        torch_dtype=torch.bfloat16,
+        device_map="cpu",  # Options: "cuda:0" (GPU), "cpu", "mps" (Apple Silicon)
+        offload_folder="/tmp"  # Offload to disk if memory is insufficient
+    ).eval()
+
+    colqwen_processor = ColQwen2_5OmniProcessor.from_pretrained("vidore/colqwen-omni-v0.1")
+    
     # Discover PDFs to process from unprocessed directory
     while True: 
         source_label = "ingestion"  # Label for tracking document source
         pdf_files = glob.glob(os.path.join(UNPROCESSED_DIR, "*.pdf"))
         print(f"Found {len(pdf_files)} PDF file(s) to process")
-    
-        # Initialize ColQwen2.5 Omni model for embedding generation
-        # Create offload folder if it doesn't exist
-        os.makedirs("/tmp", exist_ok=True)
-        print("Loading ColQwen2.5 Omni model and processor...")
-        colqwen_model = ColQwen2_5Omni.from_pretrained(
-            "vidore/colqwen-omni-v0.1",
-            torch_dtype=torch.bfloat16,
-            device_map="cpu",  # Options: "cuda:0" (GPU), "cpu", "mps" (Apple Silicon)
-            offload_folder="/tmp"  # Offload to disk if memory is insufficient
-        ).eval()
-
-        colqwen_processor = ColQwen2_5OmniProcessor.from_pretrained("vidore/colqwen-omni-v0.1")
         
         # Process each PDF file
         for pdf_path in pdf_files:
