@@ -149,14 +149,12 @@ def main() -> None:
             print(f"Error uploading to Qdrant: {e}")
     
     # Initialize ColQwen2.5 Omni model for embedding generation
-    # Create offload folder if it doesn't exist
-    os.makedirs("/tmp", exist_ok=True)
     print("Loading ColQwen2.5 Omni model and processor...")
     colqwen_model = ColQwen2_5Omni.from_pretrained(
         "vidore/colqwen-omni-v0.1",
         torch_dtype=torch.bfloat16,
-        device_map="cpu",  # Options: "cuda:0" (GPU), "cpu", "mps" (Apple Silicon)
-        offload_folder="/tmp"  # Offload to disk if memory is insufficient
+        device_map="cpu",  # Automatically distribute model across available devices
+        low_cpu_mem_usage=True  # Minimize CPU memory during loading
     ).eval()
 
     colqwen_processor = ColQwen2_5OmniProcessor.from_pretrained("vidore/colqwen-omni-v0.1")
