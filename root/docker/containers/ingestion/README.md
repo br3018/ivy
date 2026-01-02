@@ -105,6 +105,10 @@ The service provides detailed logging:
 - **ColQwen2.5 Omni Model**: [vidore/colqwen-omni-v0.1](https://huggingface.co/vidore/colqwen-omni-v0.1)
 - **ColPali Engine**: [ColPali Engine Documentation](https://github.com/illuin-tech/colpali)
 
+## Ideas for future implementation
+
+- Use a cluster of [HP EliteDesk 800 G2](https://www.ebay.co.uk/itm/366054900764) to generate embeddings and host qdrant database
+
 ## Troubleshooting
 
 ### Common Issues
