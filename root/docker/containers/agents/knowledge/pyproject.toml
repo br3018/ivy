@@ -1,7 +1,15 @@
 [project]
 name = "knowledge"
 version = "0.1.0"
-description = "Add your description here"
+description = "Knowledge Agent - RAG retrieval using ColQwen2 and Qdrant"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "qdrant-client>=1.12.0",
+    "colpali-engine>=0.3.2",
+    "torch>=2.5.0",
+    "pillow>=11.0.0",
+    "python-dotenv>=1.2.1",
+]
