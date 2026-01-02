@@ -1,19 +1,63 @@
 services: 
 
+  # Ollama - Local LLM service
+  #ollama:
+  #  image: ollama/ollama:latest
+  #  ports:
+  #    - "11434:11434"
+  #  volumes:
+  #    - ../../data/ollama:/root/.ollama  # Persist downloaded models
+    # GPU Configuration (uncomment for NVIDIA GPU support):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # Orchestrator - LangGraph coordinator with OpenAI-compatible API
   orchestrator:
     build: ./containers/orchestrator
+    ports:
+      - "8000:8000"  # Expose API for Open WebUI
+    #depends_on:
+    #  - ollama
+    #  - knowledge
+    env_file:
+      - .env  # Load environment variables from .env file
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - KNOWLEDGE_AGENT_URL=http://knowledge:8001
 
-  ingestion:
-    build: ./containers/ingestion
+  # Knowledge Agent - RAG retrieval service
+  knowledge:
+    build: ./containers/agents/knowledge
+    ports:
+      - "8001:8001"  # Expose API for orchestrator
     depends_on:
       - vector-db
+    env_file:
+      - .env
     environment:
-      - QDRANT_URL=http://vector-db:6333 # URL for the vector database
-      - HF_HOME=/app/.cache/huggingface # Set Hugging Face cache directory
+      - QDRANT_URL=http://vector-db:6333
+      - HF_HOME=/app/.cache/huggingface
     volumes:
-      - ../../data/ingestion:/app/data # Connect host ingestion data directory
-      - ../../data/ingestion/huggingface-cache:/app/.cache/huggingface # Cache for Hugging Face models
+      - ../../data/knowledge-cache:/app/.cache/huggingface  # Separate model cache
 
+  # Ingestion - PDF processing service
+  #ingestion:
+  #  build: ./containers/ingestion
+  #  depends_on:
+  #    - vector-db
+  #  environment:
+  #    - QDRANT_URL=http://vector-db:6333 # URL for the vector database
+  #    - HF_HOME=/app/.cache/huggingface # Set Hugging Face cache directory
+  #  volumes:
+  #    - ../../data/ingestion:/app/data # Connect host ingestion data directory
+  #    - ../../data/ingestion/huggingface-cache:/app/.cache/huggingface # Cache for Hugging Face models
+
+  # Qdrant - Vector database
   vector-db:
     image: qdrant/qdrant:latest
     ports:
@@ -21,3 +65,16 @@ services:
       - "6334:6334"
     volumes:
       - ../../data/vector-db:/qdrant/storage # Persist vector DB data
+
+  # Open WebUI - Chat interface
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    ports:
+      - "3000:8080"  # Access UI at http://localhost:3000
+    depends_on:
+      - orchestrator
+    environment:
+      - OPENAI_API_BASE_URL=http://orchestrator:8000/v1
+      - OPENAI_API_KEY=dummy  # Required by Open WebUI but not used (auth in orchestrator)
+    volumes:
+      - ../../data/open-webui:/app/backend/data  # Persist user data and settings
